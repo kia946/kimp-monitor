@@ -155,3 +155,38 @@ if not st.session_state.df.empty:
 else:
 
     st.write("👆 **'시세 새로고침'** 버튼을 눌러주세요!")
+# --- 기존 코드 맨 아래에 붙여넣기 ---
+
+st.divider() # 구분선
+
+st.subheader("🧮 김프 수익 계산기")
+with st.expander("지금 환전하면 얼마 받을까? (클릭)", expanded=True):
+    
+    # 계산을 위해 실시간 가격을 한 번 더 확인합니다
+    try:
+        # 업비트의 테더(USDT) 가격 가져오기
+        calc_ticker = ccxt.upbit()
+        calc_price = calc_ticker.fetch_ticker('USDT/KRW')['close']
+        
+        # 1. 입력창 만들기
+        invest_krw = st.number_input("투자할 원화(KRW)를 입력하세요", min_value=10000, value=1000000, step=10000)
+        
+        # 2. 계산하기
+        # 내가 받을 테더 = 내 돈 / 테더 가격
+        get_usdt = invest_krw / calc_price
+        
+        # 3. 결과 보여주기
+        st.write(f"현재 테더 가격: **{calc_price:,.0f} 원**")
+        st.success(f"💰 **{invest_krw:,.0f} 원**으로 **{get_usdt:,.2f} USDT**를 살 수 있습니다.")
+        
+        # 4. 뼈 때리는 조언 (김프 비용 계산)
+        # 만약 김프가 3%라면, 나는 3% 비싸게 사는 셈입니다.
+        kim_p_cost = invest_krw * (kimchi_premium / 100) # 김프 변수명은 위에서 쓴 것과 같아야 함 (보통 kimchi_premium)
+        
+        if kimchi_premium > 0:
+            st.info(f"💡 잠깐! 지금 김프가 **{kimchi_premium:.2f}%** 껴있어서, 직구보다 약 **{kim_p_cost:,.0f} 원** 더 비싸게 사는 셈입니다.")
+        else:
+            st.info(f"🔥 찬스! 지금 역프(싸게 사는 구간)라서 **{-kim_p_cost:,.0f} 원** 이득 보고 들어갑니다!")
+
+    except:
+        st.error("계산기 데이터를 불러오는 중입니다...")
