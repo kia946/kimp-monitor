@@ -20,7 +20,7 @@ if 'rate' not in st.session_state:
 # 2. 거래소 연결
 @st.cache_resource
 def get_exchanges():
-    return ccxt.upbit(), ccxt.binance()
+    return ccxt.upbit(), ccxt.binanceus()
 
 upbit, binance = get_exchanges()
 
@@ -153,4 +153,5 @@ if not st.session_state.df.empty:
     )
 
 else:
+
     st.write("👆 **'시세 새로고침'** 버튼을 눌러주세요!")
