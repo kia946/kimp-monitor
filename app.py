@@ -155,7 +155,7 @@ if not st.session_state.df.empty:
 else:
 
     st.write("👆 **'시세 새로고침'** 버튼을 눌러주세요!")
-# --- 기존 코드 맨 아래에 이어서 붙여넣기 ---
+# --- 기존 코드 아래에 붙여넣기 ---
 
 st.divider() # 구분선
 
@@ -177,13 +177,12 @@ with st.expander("지금 환전하면 얼마 받을까? (클릭)", expanded=True
         st.write(f"현재 테더(USDT) 가격: **{calc_price:,.0f} 원**")
         st.success(f"💰 **{invest_krw:,.0f} 원**으로 **{get_usdt:,.2f} USDT**를 살 수 있습니다.")
         
-        # 5. (수정됨) 단순 조언 메시지
-        # 에러를 방지하기 위해 복잡한 계산 대신 현재 가격 정보만 보여줍니다.
+        # 5. 팁 메시지
         if calc_price > 1450: 
             st.info(f"💡 팁: 현재 환율(약 1450원)보다 비쌀 수 있습니다. 위쪽 표의 '김프(%)'를 꼭 확인하세요!")
         else:
              st.info(f"🔥 팁: 가격이 좋습니다! 위쪽 표에서 역프인지 확인하고 진입하세요.")
 
     except Exception as e:
-        # 에러가 나면 무슨 에러인지 보여줍니다 (디버깅용)
-        st.error(f"계산기 에러 발생: {e}")
+        # 만약 또 에러가 나면, 이번엔 '로딩 중' 말고 진짜 이유를 알려줍니다.
+        st.error(f"에러 발생: {e}")
