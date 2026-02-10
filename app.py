@@ -90,24 +90,34 @@ col1, col2 = st.columns([1, 4])
 
 # [새로고침 메뉴 구성]
 with col1:
-    # 1. 수동 버튼 (누르면 데이터 가져옴!)
+    # 1. 수동 버튼
     if st.button('🔄 즉시 새로고침', type="primary"):
         with st.spinner('시세 조회 중...'):
-            new_df, new_rate = load_data()
-            st.session_state.df = new_df
-            st.session_state.rate = new_rate
-            # 데이터 가져왔으니 끝! 화면은 알아서 바뀝니다.
+            temp_df, temp_rate = load_data()
+            # 데이터가 정상적으로 왔을 때만 업데이트! (중요)
+            if not temp_df.empty:
+                st.session_state.df = temp_df
+                st.session_state.rate = temp_rate
+            else:
+                st.warning("데이터 조회 실패! (잠시 대기)")
     
-    # 2. 자동 새로고침 스위치 (ON/OFF)
+    # 2. 자동 새로고침 스위치
     auto_refresh = st.checkbox('⚡ 3초마다 자동 업데이트')
 
-    # 스위치가 켜져 있으면?
     if auto_refresh:
-        new_df, new_rate = load_data()
-        st.session_state.df = new_df
-        st.session_state.rate = new_rate
+        # 3초 대기 (먼저 쉬고 데이터를 가져옵니다)
         time.sleep(3) 
-        st.rerun()
+        
+        temp_df, temp_rate = load_data()
+        
+        # 가져온 데이터가 있을 때만 화면 갱신
+        if not temp_df.empty:
+            st.session_state.df = temp_df
+            st.session_state.rate = temp_rate
+            st.rerun()
+        else:
+            # 데이터 못 가져오면? 그냥 조용히 넘어감 (화면 안 지워짐)
+            pass
 # [화폐 선택]
 with col2:
     currency_mode = st.radio(
@@ -192,5 +202,6 @@ with st.expander("지금 환전하면 얼마 받을까? (클릭)", expanded=True
 
     except Exception as e:
         st.error(f"계산기 에러: {e}")
+
 
 
