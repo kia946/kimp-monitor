@@ -3,6 +3,39 @@ import ccxt
 import pandas as pd
 import yfinance as yf
 import time  # <--- ★ 이거 꼭 추가해야 합니다! (시계 기능)
+import requests  # 이게 없으면 에러 납니다!
+
+# --- 지갑 상태 조회 함수 정의 (이걸 먼저 넣어야 함) ---
+def get_upbit_wallet_status():
+    url = "https://api.upbit.com/v1/status/wallet"
+    try:
+        response = requests.get(url, timeout=1) # 1초 안에 답 없으면 패스
+        data = response.json()
+        
+        # 보기 편하게 가공
+        wallet_map = {}
+        for item in data:
+            symbol = item['currency'] # BTC, ETH 등
+            state = item['wallet_state'] # working, withdraw_suspended 등
+            
+            is_warning = False
+            desc = "정상"
+            
+            if state == 'withdraw_suspended':
+                desc = "출금중단(주의)"
+                is_warning = True
+            elif state == 'deposit_suspended':
+                desc = "입금중단(주의)"
+                is_warning = True
+            elif state == 'inactive':
+                desc = "입출금중단(위험)"
+                is_warning = True
+                
+            wallet_map[symbol] = {'desc': desc, 'warning': is_warning}
+            
+        return wallet_map
+    except:
+        return {} # 에러나면 빈 깡통 리턴
 # ---------------------------------------------------------
 # [기본 설정]
 # [기본 설정]
@@ -34,7 +67,7 @@ def get_exchanges():
 upbit, binance = get_exchanges()
 
 # ---------------------------------------------------------
-# 3. 데이터 가져오기 로직
+# 3. 데이터 가져오기 로직 (수정됨: 지갑 상태 감지 추가)
 def load_data():
     try:
         # 환율 가져오기
@@ -55,6 +88,10 @@ def load_data():
         binance_coins = set([x.split('/')[0] for x in binance_tickers.keys() if '/USDT' in x])
         common_coins = list(upbit_coins & binance_coins)
         
+        # === [추가 1] 루프 돌기 전에 지갑 상태 한 번 싹 긁어오기 ===
+        wallet_status = get_upbit_wallet_status() 
+        # =======================================================
+        
         result = []
         for coin in common_coins:
             u_sym = f"{coin}/KRW"
@@ -65,6 +102,14 @@ def load_data():
                 korean_name = upbit.market(u_sym)['info']['korean_name']
             except:
                 korean_name = coin
+
+            # === [추가 2] 개별 코인 지갑 상태 확인하기 ===
+            # 이미 coin 변수에 'BTC', 'ETH' 등이 들어있으므로 바로 조회
+            w_info = wallet_status.get(coin, {'desc': '정상', 'warning': False})
+            
+            # 경고 메시지 처리 (정상이면 빈칸, 문제 있으면 메시지 표시)
+            status_msg = w_info['desc'] if w_info['warning'] else "정상"
+            # ============================================
 
             if u_sym in upbit_tickers and b_sym in binance_tickers:
                 kp_raw = upbit_tickers[u_sym]['close']
@@ -79,7 +124,8 @@ def load_data():
                         "한글명": korean_name,
                         "한국_raw": kp_raw,
                         "해외_raw": bp_raw,
-                        "김프(%)": kimp
+                        "김프(%)": kimp,
+                        "비고": status_msg  # <--- [추가 3] 표에 보여줄 데이터 추가
                     })
         
         df = pd.DataFrame(result)
@@ -91,7 +137,6 @@ def load_data():
     except Exception as e:
         st.error(f"데이터 조회 중 에러: {e}")
         return pd.DataFrame(), 1400
-
 # ---------------------------------------------------------
 # 4. 화면 구성
 
@@ -164,8 +209,9 @@ if not st.session_state.df.empty:
         color = 'red' if val > 5 else ('blue' if val < 0 else 'black')
         return f'color: {color}; font-weight: bold'
 
-    # 표 그리기
-    display_cols = ["한글명", "코인(심볼)", "한국가격", "해외가격", "차액(Gap)", "김프(%)"]
+    # 표 그리기 (여기 '비고' 추가됨!)
+    display_cols = ["한글명", "코인(심볼)", "한국가격", "해외가격", "차액(Gap)", "김프(%)", "비고"] 
+    
     st.dataframe(
         display_df[display_cols].style.format(format_dict).map(color_kimp, subset=['김프(%)']),
         use_container_width=True,
@@ -206,6 +252,7 @@ with st.expander("지금 환전하면 얼마 받을까? (클릭)", expanded=True
 if auto_refresh:
     time.sleep(3) # 3초 기다리고
     st.rerun()    # 다시 처음으로!
+
 
 
 
