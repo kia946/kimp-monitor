@@ -17,7 +17,7 @@ if 'rate' not in st.session_state:
     st.session_state.rate = 1465.0
 
 # ---------------------------------------------------------
-# 2. 거래소 연결
+# 2. 거래소 연결 (한 번만 연결하고 기억함)
 @st.cache_resource
 def get_exchanges():
     return ccxt.upbit(), ccxt.binanceus()
@@ -117,7 +117,7 @@ if not st.session_state.df.empty:
     # 일단 전체 목록을 가져옴
     display_df = st.session_state.df.copy()
 
-    # ★ [필터링 로직] 검색어가 '있을 때만' 남기고, 없으면 전체 목록 유지
+    # ★ [필터링 로직]
     if search_term:
         display_df = display_df[
             display_df['코인(심볼)'].str.contains(search_term, case=False) | 
@@ -139,7 +139,7 @@ if not st.session_state.df.empty:
         display_df['차액(Gap)'] = display_df['한국가격'] - display_df['해외가격']
         format_dict = {"한국가격": "${:,.4f}", "해외가격": "${:,.4f}", "차액(Gap)": "{:+,.4f}", "김프(%)": "{:.2f}%"}
 
-    # 색상 (빨강/파랑)
+    # 색상
     def color_kimp(val):
         color = 'red' if val > 5 else ('blue' if val < 0 else 'black')
         return f'color: {color}; font-weight: bold'
@@ -153,36 +153,30 @@ if not st.session_state.df.empty:
     )
 
 else:
-
     st.write("👆 **'시세 새로고침'** 버튼을 눌러주세요!")
-# --- 기존 코드 아래에 붙여넣기 ---
 
-st.divider() # 구분선
+# ---------------------------------------------------------
+# 6. 계산기 (표 아래에 항상 표시)
+st.divider()
 
 st.subheader("🧮 테더(USDT) 환전 계산기")
 with st.expander("지금 환전하면 얼마 받을까? (클릭)", expanded=True):
-    
     try:
-        # 1. 업비트의 테더(USDT) 실시간 가격 가져오기
-        calc_ticker = ccxt.upbit()
-        calc_price = calc_ticker.fetch_ticker('USDT/KRW')['close']
+        # 기존에 연결해둔 upbit 변수 재활용 (속도 향상)
+        # 단, 가격은 실시간으로 가져옴
+        calc_price = upbit.fetch_ticker('USDT/KRW')['close']
         
-        # 2. 입력창 만들기
         invest_krw = st.number_input("투자할 원화(KRW)를 입력하세요", min_value=10000, value=1000000, step=10000)
         
-        # 3. 계산하기 (내 돈 ÷ 테더 가격)
         get_usdt = invest_krw / calc_price
         
-        # 4. 결과 보여주기 (초록색 박스)
         st.write(f"현재 테더(USDT) 가격: **{calc_price:,.0f} 원**")
         st.success(f"💰 **{invest_krw:,.0f} 원**으로 **{get_usdt:,.2f} USDT**를 살 수 있습니다.")
         
-        # 5. 팁 메시지
         if calc_price > 1450: 
             st.info(f"💡 팁: 현재 환율(약 1450원)보다 비쌀 수 있습니다. 위쪽 표의 '김프(%)'를 꼭 확인하세요!")
         else:
              st.info(f"🔥 팁: 가격이 좋습니다! 위쪽 표에서 역프인지 확인하고 진입하세요.")
 
     except Exception as e:
-        # 만약 또 에러가 나면, 이번엔 '로딩 중' 말고 진짜 이유를 알려줍니다.
-        st.error(f"에러 발생: {e}")
+        st.error(f"계산기 에러: {e}")
