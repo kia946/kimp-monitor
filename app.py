@@ -99,7 +99,7 @@ with col1:
                 st.session_state.rate = new_rate
     
     # 2. 자동 새로고침 스위치
-    auto_refresh = st.checkbox('⚡ 3초마다 자동 업데이트')
+    auto_refresh = st.checkbox('⚡ 1초마다 자동 업데이트')
 
     # 스위치가 켜져 있으면? -> 데이터를 미리 가져옵니다. (화면은 아직 안 그림)
     if auto_refresh:
@@ -197,5 +197,6 @@ with st.expander("지금 환전하면 얼마 받을까? (클릭)", expanded=True
 if auto_refresh:
     time.sleep(1) # 3초 기다리고
     st.rerun()    # 다시 처음으로!
+
 
 
