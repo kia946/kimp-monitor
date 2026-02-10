@@ -90,25 +90,24 @@ col1, col2 = st.columns([1, 4])
 
 # [새로고침 메뉴 구성]
 with col1:
-    # 1. 수동 버튼 (누르면 즉시 새로고침)
+    # 1. 수동 버튼 (누르면 데이터 가져옴!)
     if st.button('🔄 즉시 새로고침', type="primary"):
-        st.rerun()
+        with st.spinner('시세 조회 중...'):
+            new_df, new_rate = load_data()
+            st.session_state.df = new_df
+            st.session_state.rate = new_rate
+            # 데이터 가져왔으니 끝! 화면은 알아서 바뀝니다.
     
     # 2. 자동 새로고침 스위치 (ON/OFF)
     auto_refresh = st.checkbox('⚡ 3초마다 자동 업데이트')
 
     # 스위치가 켜져 있으면?
     if auto_refresh:
-        # 데이터 로딩
         new_df, new_rate = load_data()
         st.session_state.df = new_df
         st.session_state.rate = new_rate
-        
-        # 3초 쉬었다가...
         time.sleep(3) 
-        # 화면 다시 그리기 (무한 반복)
         st.rerun()
-
 # [화폐 선택]
 with col2:
     currency_mode = st.radio(
@@ -193,4 +192,5 @@ with st.expander("지금 환전하면 얼마 받을까? (클릭)", expanded=True
 
     except Exception as e:
         st.error(f"계산기 에러: {e}")
+
 
